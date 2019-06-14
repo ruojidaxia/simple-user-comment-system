@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.fgj.comment.mybatisplus.mapper.UserCommentMapper">
+   <!--<cache eviction="LRU" flushInterval="600000" readOnly="true" size="1024"/>-->
+
+    <resultMap id="userCommentResult" type="UserCommentVo" autoMapping="true">
+        <id property="id" column="id"/>
+        <association property="user" javaType="User" column="username" autoMapping="true"/>
+        <!--<collection property="repliedComments" select="nestedSelectRepliedCommentsVo" column="{id=id,principleUsername=principleUsername}" fetchType="lazy"/>-->
+        <collection property="repliedComments" select="nestedSelectRepliedCommentsVo" column="{id=id,principleUsername=principleUsername}"/>
+    </resultMap>
+
+    <resultMap id="repliedUserCommentResult" type="UserCommentVo" autoMapping="true">
+        <id property="id" column="id"/>
+        <association property="user" javaType="User" autoMapping="true"/>
+        <association property="refUser" javaType="User" columnPrefix="ref_" autoMapping="true"/>
+    </resultMap>
+
+    <select id="selectUserCommentsVo" resultMap="userCommentResult">
+        select
+        #{principleUsername} as principleUsername,
+        cmt.id,
+        cmt.card_id,
+        usr.username,
+        cmt.comment,
+        cmt.liker_num,
+        cmt.replied_num,
+        cmt.ref_comment_id,
+        cmt.ref_username,
+        cmt.created_date,
+        usr.nickname,
+        usr.head_photo,
+        !isnull(lk.id) as liked
+        from user_comment cmt
+        join user usr on usr.username = cmt.username
+        left join user_comment_like lk on lk.username = #{principleUsername} and lk.comment_id = cmt.id
+        where card_id = #{cardId} and ref_comment_id is null order by cmt.liker_num desc
+    </select>
+
+    <select id="nestedSelectRepliedCommentsVo" resultMap="repliedUserCommentResult">
+        select
+        cmt.id,
+        cmt.card_id,
+        usr.username,
+        cmt.comment,
+        cmt.liker_num,
+        cmt.replied_num,
+        cmt.ref_comment_id,
+        cmt.ref_username,
+        cmt.created_date,
+        usr.nickname,
+        usr.head_photo,
+        rfusr.nickname as ref_username,
+        rfusr.head_photo as ref_head_photo,
+        !isnull(lk.id) as liked
+        from user_comment cmt
+        join user usr on usr.username = cmt.username
+        left join user rfusr on cmt.REF_USERNAME = rfusr.USERNAME
+        left join user_comment_like lk on lk.username = #{principleUsername} and lk.comment_id = cmt.id
+        where ref_comment_id = #{id} order by cmt.liker_num desc
+        limit 0,1
+    </select>
+
+    <select id="selectRepliedCommentsVo" resultMap="repliedUserCommentResult">
+        select
+        cmt.id,
+        cmt.card_id,
+        usr.username,
+        cmt.comment,
+        cmt.liker_num,
+        cmt.replied_num,
+        cmt.ref_comment_id,
+        cmt.ref_username,
+        cmt.created_date,
+        usr.nickname,
+        usr.head_photo,
+        rfusr.nickname as ref_nickname,
+        rfusr.head_photo as ref_head_photo,
+        !isnull(lk.id) as liked
+        from user_comment cmt
+        join user usr on usr.username = cmt.username
+        left join user rfusr on cmt.REF_USERNAME = rfusr.USERNAME
+        left join user_comment_like lk on lk.username = #{principleUsername} and lk.comment_id = cmt.id
+        where ref_comment_id = #{refCommentId} order by cmt.liker_num desc
+    </select>
+</mapper>

@@ -1,0 +1,16 @@
+# # # # # √
+2019.3.9 - - - 2019.3.11
+token验证的时候，走了两次successfulAuthentication
+###分析
+①在WebSecurityConfigure中使用了@Bean将TokenAuthenticationFilter注册给了ApplicationFilterChain#filters，
+②在WebSecurityConfigure#config中，使用httpSecurity#addFilterBefore将TokenAuthenticationFilter设置到httpSecurity的filter属性中
+③ApplicationFilterChain注册了SpringSecurityFilterChain(应该是个委托代理filter)，而且SpringSecurityFilterChain是在TokenAuthenticationFilter之前被注册
+所以：
+先执行了ApplicationFilterChain#filters#SpringSecurityFilterChain#TokenAuthenticationFilter，
+再执行了ApplicationFilterChain#filters#TokenAuthenticationFilter
+
+# # # # # √
+2019.3.11
+全局异常处理不生效
+分析：
+execute方法中，把HttpServletRequest参数类型写成了HttpRequest类型，导致spring无法注入httpRequest
